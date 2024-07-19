@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Glassmorphism Code Editor with CodeMirror</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/codemirror.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/theme/dracula.min.css">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            height: 100vh;
+            display: flex;
+            background: linear-gradient(45deg, #ff9a9e 0%, #fad0c4 99%, #fad0c4 100%);
+            color: #ffffff;
+            overflow: hidden;
+        }
+        .container {
+            display: flex;
+            flex: 1;
+            padding: 20px;
+            gap: 20px;
+        }
+        .editor-pane, .preview-pane {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37);
+            overflow: hidden;
+        }
+        .CodeMirror {
+            flex: 1;
+            background: rgba(0, 0, 0, 0.1) !important;
+            backdrop-filter: blur(5px);
+            height: auto;
+            font-size: 16px;
+            line-height: 1.5;
+            padding: 10px;
+        }
+        .CodeMirror-gutters {
+            background: rgba(0, 0, 0, 0.2) !important;
+            border-right: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .preview-pane iframe {
+            flex: 1;
+            border: none;
+            background-color: white;
+        }
+        .controls {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-between;
+            padding: 15px;
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(5px);
+            border-top: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        button, select {
+            background: rgba(255, 255, 255, 0.2);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            color: white;
+            padding: 10px 20px;
+            text-align: center;
+            text-decoration: none;
+            display: inline-block;
+            font-size: 14px;
+            margin: 4px 2px;
+            cursor: pointer;
+            border-radius: 10px;
+            backdrop-filter: blur(5px);
+            transition: all 0.3s ease;
+        }
+        button:hover, select:hover {
+            background: rgba(255, 255, 255, 0.3);
+        }
+        select {
+            background: rgba(52, 152, 219, 0.3);
+        }
+        .theme-switch {
+            display: flex;
+            align-items: center;
+        }
+        .switch {
+            position: relative;
+            display: inline-block;
+            width: 60px;
+            height: 34px;
+            margin: 0 10px;
+        }
+        .switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(204, 204, 204, 0.3);
+            transition: .4s;
+            border-radius: 34px;
+        }
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 26px;
+            width: 26px;
+            left: 4px;
+            bottom: 4px;
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
+        }
+        input:checked + .slider {
+            background-color: rgba(33, 150, 243, 0.3);
+        }
+        input:checked + .slider:before {
+            transform: translateX(26px);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="editor-pane">
+            <textarea id="code-editor"></textarea>
+            <div class="controls">
+                <select id="language-select">
+                    <option value="htmlmixed">HTML</option>
+                    <option value="css">CSS</option>
+                    <option value="javascript">JavaScript</option>
+                </select>
+                <button onclick="copyCode()">Copy Code</button>
+                <button onclick="formatCode()">Format Code</button>
+                <button onclick="saveAsHtml()">Save as HTML</button>
+                <button onclick="openPreview()">Preview</button>
+                <input type="file" id="import-file" style="display: none;" onchange="importCode()">
+                <button onclick="document.getElementById('import-file').click()">Import</button>
+                <div class="theme-switch">
+                    <span>Eclipse</span>
+                    <label class="switch">
+                        <input type="checkbox" id="theme-toggle" checked>
+                        <span class="slider"></span>
+                    </label>
+                    <span>Dracula</span>
+                </div>
+            </div>
+        </div>
+        <div class="preview-pane">
+            <iframe id="preview-frame"></iframe>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/codemirror.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/mode/htmlmixed/htmlmixed.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/mode/css/css.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/mode/javascript/javascript.min.js"></script>
+    <script>
+        let editor;
+        const preview = document.getElementById('preview-frame');
+        const languageSelect = document.getElementById('language-select');
+        const themeToggle = document.getElementById('theme-toggle');
+
+        let code = {
+            htmlmixed: '',
+            css: '',
+            javascript: ''
+        };
+
+        function initCodeMirror() {
+            editor = CodeMirror.fromTextArea(document.getElementById('code-editor'), {
+                lineNumbers: true,
+                theme: 'dracula',
+                mode: 'htmlmixed',
+                autofocus: true,
+                lineWrapping: true
+            });
+
+            editor.on('change', function() {
+                code[languageSelect.value] = editor.getValue();
+                updatePreview();
+            });
+        }
+
+        function updatePreview() {
+            const combinedCode = `
+                <html>
+                    <head>
+                        <style>${code.css}</style>
+                    </head>
+                    <body>
+                        ${code.htmlmixed}
+                        <script>${code.javascript}<\/script>
+                    </body>
+                </html>
+            `;
+            preview.srcdoc = combinedCode;
+        }
+
+        languageSelect.addEventListener('change', function() {
+            editor.setOption('mode', this.value);
+            editor.setValue(code[this.value]);
+        });
+
+        function copyCode() {
+            navigator.clipboard.writeText(editor.getValue());
+        }
+
+        function formatCode() {
+            // This is a placeholder. Implement a proper code formatter here.
+            alert('Code formatting not implemented in this demo.');
+        }
+
+        function saveAsHtml() {
+            const timestamp = new Date().toLocaleString('en-US', { 
+                year: 'numeric', month: '2-digit', day: '2-digit',
+                hour: '2-digit', minute: '2-digit', hour12: false 
+            }).replace(/[/:]/g, '-');
+            const blob = new Blob([preview.srcdoc], { type: 'text/html' });
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = `code_${timestamp}.html`;
+            link.click();
+        }
+
+        function openPreview() {
+            const newWindow = window.open();
+            newWindow.document.write(preview.srcdoc);
+        }
+
+        function importCode() {
+            const file = document.getElementById('import-file').files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    editor.setValue(e.target.result);
+                    code[languageSelect.value] = e.target.result;
+                    updatePreview();
+                };
+                reader.readAsText(file);
+            }
+        }
+
+        themeToggle.addEventListener('change', function() {
+            if (this.checked) {
+                editor.setOption('theme', 'dracula');
+            } else {
+                editor.setOption('theme', 'default');
+            }
+        });
+
+        // Initialize
+        initCodeMirror();
+        updatePreview();
+    </script>
+</body>
+</html>
