@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bouncing Ball in Circle</title>
+    <style>
+        body {
+            margin: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            background: #f0f0f0;
+        }
+        .circle-container {
+            position: relative;
+            width: 300px;
+            height: 300px;
+            border-radius: 50%;
+            background-color: #3498db;
+            border: 2px solid #2980b9;
+            overflow: hidden;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        .ball {
+            position: absolute;
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            background-color: #e74c3c;
+        }
+    </style>
+</head>
+<body>
+    <div class="circle-container">
+        <div class="ball"></div>
+    </div>
+
+    <script>
+        const ball = document.querySelector('.ball');
+        const container = document.querySelector('.circle-container');
+        const containerRadius = container.clientWidth / 2;
+        const ballRadius = ball.clientWidth / 2;
+        const boundaryRadius = containerRadius - ballRadius;
+        let angle = Math.random() * 2 * Math.PI;
+        let speed = 3;
+        let ballX = containerRadius;
+        let ballY = containerRadius;
+
+        function randomColor() {
+            return `rgb(${Math.floor(Math.random() * 256)}, ${Math.floor(Math.random() * 256)}, ${Math.floor(Math.random() * 256)})`;
+        }
+
+        function moveBall() {
+            ballX += speed * Math.cos(angle);
+            ballY += speed * Math.sin(angle);
+
+            const distToCenter = Math.sqrt(Math.pow(ballX - containerRadius, 2) + Math.pow(ballY - containerRadius, 2));
+            if (distToCenter + ballRadius > boundaryRadius) {
+                const normalAngle = Math.atan2(ballY - containerRadius, ballX - containerRadius);
+                angle = 2 * normalAngle - angle + Math.PI;
+                container.style.backgroundColor = randomColor();
+            }
+
+            ball.style.transform = `translate(${ballX - ballRadius}px, ${ballY - ballRadius}px)`;
+            requestAnimationFrame(moveBall);
+        }
+
+        moveBall();
+    </script>
+</body>
+</html>
