@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Bouncing Ball with Trailing Smaller Balls</title>
+    <title>Bouncing Ball with Extended Trail and Enhanced Circle</title>
     <style>
         body {
             display: flex;
@@ -26,7 +26,7 @@
 
         const centerX = canvas.width / 2;
         const centerY = canvas.height / 2;
-        const radius = 190;
+        const radius = 185;
 
         let x = centerX;
         let y = centerY;
@@ -51,7 +51,14 @@
             ctx.beginPath();
             ctx.arc(centerX, centerY, radius, 0, Math.PI * 2);
             ctx.strokeStyle = strokeColor;
-            ctx.lineWidth = 5;
+            ctx.lineWidth = 10;
+            ctx.stroke();
+
+            // Add an inner stroke for depth
+            ctx.beginPath();
+            ctx.arc(centerX, centerY, radius - 5, 0, Math.PI * 2);
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.5)';
+            ctx.lineWidth = 2;
             ctx.stroke();
         }
 
@@ -101,7 +108,7 @@
             y += dy;
 
             trail.unshift({x, y});
-            if (trail.length > 20) trail.pop();
+            if (trail.length > 50) trail.pop();  // Extended trail length
 
             drawBall();
 
