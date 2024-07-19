@@ -60,8 +60,13 @@
 
             const distToCenter = Math.sqrt(Math.pow(ballX - containerRadius, 2) + Math.pow(ballY - containerRadius, 2));
             if (distToCenter + ballRadius > boundaryRadius) {
+                // Reflect the angle
                 const normalAngle = Math.atan2(ballY - containerRadius, ballX - containerRadius);
                 angle = 2 * normalAngle - angle + Math.PI;
+
+                // Normalize the angle to be within the range [0, 2*PI)
+                angle = (angle + 2 * Math.PI) % (2 * Math.PI);
+
                 container.style.backgroundColor = randomColor();
             }
 
