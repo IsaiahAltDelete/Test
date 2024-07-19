@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Interactive Glassmorphic Bouncing Ball with Speed Control</title>
+    <title>Refined Glassmorphic Bouncing Ball with Gradient Slider</title>
     <style>
         body, html {
             margin: 0;
@@ -54,7 +54,7 @@
         #speed-slider {
             width: 100%;
             -webkit-appearance: none;
-            background: rgba(255, 255, 255, 0.5);
+            background: linear-gradient(90deg, #ff9a9e, #fad0c4, #ffecd2);
             outline: none;
             border-radius: 15px;
             overflow: hidden;
@@ -67,8 +67,8 @@
             border-radius: 50%;
             background: #fff;
             cursor: pointer;
-            border: 4px solid #333;
-            box-shadow: -407px 0 0 400px #4CAF50;
+            border: 4px solid rgba(255, 255, 255, 0.5);
+            box-shadow: 0 0 5px rgba(0, 0, 0, 0.2);
         }
     </style>
 </head>
@@ -167,7 +167,17 @@
             const dy2 = centerY - y;
             const distance = Math.sqrt(dx2 * dx2 + dy2 * dy2);
 
-            if (distance > radius - ballRadius) {
+            if (distance + ballRadius > radius) {
+                // Calculate the intersection point
+                const intersectionFactor = (radius - ballRadius) / distance;
+                const intersectionX = centerX - dx2 * intersectionFactor;
+                const intersectionY = centerY - dy2 * intersectionFactor;
+
+                // Move the ball to the intersection point
+                x = intersectionX;
+                y = intersectionY;
+
+                // Generate new random direction
                 angle = Math.random() * Math.PI * 2;
                 dx = Math.cos(angle) * speed;
                 dy = Math.sin(angle) * speed;
@@ -189,8 +199,9 @@
 
         speedSlider.addEventListener('input', function() {
             speed = (this.value / 5) * (canvasSize * 0.005);
-            dx = Math.cos(angle) * speed;
-            dy = Math.sin(angle) * speed;
+            const currentAngle = Math.atan2(dy, dx);
+            dx = Math.cos(currentAngle) * speed;
+            dy = Math.sin(currentAngle) * speed;
         });
 
         update();
