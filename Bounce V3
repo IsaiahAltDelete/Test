@@ -3,78 +3,112 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Bouncing Ball in Circle</title>
+    <title>Bouncing Ball with Trailing Smaller Balls</title>
     <style>
         body {
-            margin: 0;
             display: flex;
             justify-content: center;
             align-items: center;
             height: 100vh;
-            background: #f0f0f0;
+            margin: 0;
+            background-color: #f0f0f0;
         }
-        .circle-container {
-            position: relative;
-            width: 300px;
-            height: 300px;
-            border-radius: 50%;
-            background-color: #3498db;
-            border: 2px solid #2980b9;
-            overflow: hidden;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-        }
-        .ball {
-            position: absolute;
-            width: 30px;
-            height: 30px;
-            border-radius: 50%;
-            background-color: #e74c3c;
+        #canvas {
+            border: 1px solid #000;
         }
     </style>
 </head>
 <body>
-    <div class="circle-container">
-        <div class="ball"></div>
-    </div>
-
+    <canvas id="canvas" width="400" height="400"></canvas>
     <script>
-        const ball = document.querySelector('.ball');
-        const container = document.querySelector('.circle-container');
-        const containerRadius = container.clientWidth / 2;
-        const ballRadius = ball.clientWidth / 2;
-        const boundaryRadius = containerRadius - ballRadius;
-        let angle = Math.random() * 2 * Math.PI;
-        let speed = 3;
-        let ballX = containerRadius;
-        let ballY = containerRadius;
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
 
-        function randomColor() {
-            return `rgb(${Math.floor(Math.random() * 256)}, ${Math.floor(Math.random() * 256)}, ${Math.floor(Math.random() * 256)})`;
+        const centerX = canvas.width / 2;
+        const centerY = canvas.height / 2;
+        const radius = 190;
+
+        let x = centerX;
+        let y = centerY;
+        let dx = (Math.random() - 0.5) * 4;
+        let dy = (Math.random() - 0.5) * 4;
+
+        const ballRadius = 15;
+        let strokeColor = getRandomColor();
+        let ballColor = 'black';
+        let trail = [];
+
+        function getRandomColor() {
+            return `hsl(${Math.random() * 360}, 100%, 50%)`;
         }
 
-        function moveBall() {
-            ballX += speed * Math.cos(angle);
-            ballY += speed * Math.sin(angle);
+        function getComplementaryColor(color) {
+            const hsl = color.match(/\d+/g);
+            return `hsl(${(parseInt(hsl[0]) + 180) % 360}, ${hsl[1]}%, ${hsl[2]}%)`;
+        }
 
-            const distToCenter = Math.sqrt(Math.pow(ballX - containerRadius, 2) + Math.pow(ballY - containerRadius, 2));
-            if (distToCenter + ballRadius > boundaryRadius) {
-                // Reflect the angle
-                const normalAngle = Math.atan2(ballY - containerRadius, ballX - containerRadius);
-                angle = 2 * normalAngle - angle + Math.PI;
+        function drawCircle() {
+            ctx.beginPath();
+            ctx.arc(centerX, centerY, radius, 0, Math.PI * 2);
+            ctx.strokeStyle = strokeColor;
+            ctx.lineWidth = 5;
+            ctx.stroke();
+        }
 
-                // Normalize the angle to be within the range [0, 2*PI)
-                angle = (angle + 2 * Math.PI) % (2 * Math.PI);
+        function drawBall() {
+            ctx.beginPath();
+            ctx.arc(x, y, ballRadius, 0, Math.PI * 2);
+            ctx.fillStyle = ballColor;
+            ctx.fill();
+        }
 
-                container.style.backgroundColor = randomColor();
+        function drawTrail() {
+            trail.forEach((ball, index) => {
+                ctx.beginPath();
+                ctx.arc(ball.x, ball.y, ballRadius * (1 - index / trail.length), 0, Math.PI * 2);
+                ctx.fillStyle = `hsla(${(index / trail.length) * 360}, 100%, 50%, ${1 - index / trail.length})`;
+                ctx.fill();
+            });
+        }
+
+        function update() {
+            ctx.fillStyle = 'rgba(240, 240, 240, 0.3)';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            drawCircle();
+            drawTrail();
+
+            const dx2 = centerX - x;
+            const dy2 = centerY - y;
+            const distance = Math.sqrt(dx2 * dx2 + dy2 * dy2);
+
+            if (distance > radius - ballRadius) {
+                const angle = Math.atan2(dy2, dx2);
+                const newX = centerX - (radius - ballRadius) * Math.cos(angle);
+                const newY = centerY - (radius - ballRadius) * Math.sin(angle);
+
+                dx = (Math.random() - 0.5) * 4;
+                dy = (Math.random() - 0.5) * 4;
+
+                x = newX;
+                y = newY;
+
+                strokeColor = getRandomColor();
+                ballColor = getComplementaryColor(strokeColor);
             }
 
-            ball.style.transform = `translate(${ballX - ballRadius}px, ${ballY - ballRadius}px)`;
-            requestAnimationFrame(moveBall);
+            x += dx;
+            y += dy;
+
+            trail.unshift({x, y});
+            if (trail.length > 20) trail.pop();
+
+            drawBall();
+
+            requestAnimationFrame(update);
         }
 
-        moveBall();
+        update();
     </script>
 </body>
 </html>
