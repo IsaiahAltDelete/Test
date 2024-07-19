@@ -3,37 +3,81 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Bouncing Ball with Extended Trail and Enhanced Circle</title>
+    <title>Responsive Glassmorphic Bouncing Ball with Constant Speed</title>
     <style>
+        body, html {
+            margin: 0;
+            padding: 0;
+            height: 100%;
+            overflow: hidden;
+        }
         body {
             display: flex;
             justify-content: center;
             align-items: center;
-            height: 100vh;
-            margin: 0;
-            background-color: #f0f0f0;
+            background: linear-gradient(45deg, #ff9a9e, #fad0c4, #ffecd2);
+            background-size: 400% 400%;
+            animation: gradientBG 15s ease infinite;
+        }
+        @keyframes gradientBG {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+        .canvas-container {
+            background: rgba(255, 255, 255, 0.25);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37);
+            padding: 20px;
+            width: 90vmin;
+            height: 90vmin;
+            display: flex;
+            justify-content: center;
+            align-items: center;
         }
         #canvas {
-            border: 1px solid #000;
+            border-radius: 10px;
+            width: 100%;
+            height: 100%;
         }
     </style>
 </head>
 <body>
-    <canvas id="canvas" width="400" height="400"></canvas>
+    <div class="canvas-container">
+        <canvas id="canvas"></canvas>
+    </div>
     <script>
         const canvas = document.getElementById('canvas');
         const ctx = canvas.getContext('2d');
 
-        const centerX = canvas.width / 2;
-        const centerY = canvas.height / 2;
-        const radius = 185;
+        let canvasSize, centerX, centerY, radius, ballRadius;
+
+        function setCanvasSize() {
+            canvasSize = Math.min(window.innerWidth, window.innerHeight) * 0.9;
+            canvas.width = canvasSize;
+            canvas.height = canvasSize;
+            centerX = canvasSize / 2;
+            centerY = canvasSize / 2;
+            radius = canvasSize * 0.45;
+            ballRadius = canvasSize * 0.0375;
+        }
+
+        setCanvasSize();
+        window.addEventListener('resize', () => {
+            setCanvasSize();
+            x = centerX;
+            y = centerY;
+            trail = [];
+        });
 
         let x = centerX;
         let y = centerY;
-        let dx = (Math.random() - 0.5) * 4;
-        let dy = (Math.random() - 0.5) * 4;
+        let speed = canvasSize * 0.005;
+        let angle = Math.random() * Math.PI * 2;
+        let dx = Math.cos(angle) * speed;
+        let dy = Math.sin(angle) * speed;
 
-        const ballRadius = 15;
         let strokeColor = getRandomColor();
         let ballColor = 'black';
         let trail = [];
@@ -51,14 +95,13 @@
             ctx.beginPath();
             ctx.arc(centerX, centerY, radius, 0, Math.PI * 2);
             ctx.strokeStyle = strokeColor;
-            ctx.lineWidth = 10;
+            ctx.lineWidth = canvasSize * 0.025;
             ctx.stroke();
 
-            // Add an inner stroke for depth
             ctx.beginPath();
-            ctx.arc(centerX, centerY, radius - 5, 0, Math.PI * 2);
+            ctx.arc(centerX, centerY, radius - canvasSize * 0.0125, 0, Math.PI * 2);
             ctx.strokeStyle = 'rgba(255, 255, 255, 0.5)';
-            ctx.lineWidth = 2;
+            ctx.lineWidth = canvasSize * 0.005;
             ctx.stroke();
         }
 
@@ -79,7 +122,9 @@
         }
 
         function update() {
-            ctx.fillStyle = 'rgba(240, 240, 240, 0.3)';
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.1)';
             ctx.fillRect(0, 0, canvas.width, canvas.height);
             
             drawCircle();
@@ -90,15 +135,10 @@
             const distance = Math.sqrt(dx2 * dx2 + dy2 * dy2);
 
             if (distance > radius - ballRadius) {
-                const angle = Math.atan2(dy2, dx2);
-                const newX = centerX - (radius - ballRadius) * Math.cos(angle);
-                const newY = centerY - (radius - ballRadius) * Math.sin(angle);
-
-                dx = (Math.random() - 0.5) * 4;
-                dy = (Math.random() - 0.5) * 4;
-
-                x = newX;
-                y = newY;
+                const normal = { x: dx2 / distance, y: dy2 / distance };
+                const dot = dx * normal.x + dy * normal.y;
+                dx -= 2 * dot * normal.x;
+                dy -= 2 * dot * normal.y;
 
                 strokeColor = getRandomColor();
                 ballColor = getComplementaryColor(strokeColor);
@@ -108,7 +148,7 @@
             y += dy;
 
             trail.unshift({x, y});
-            if (trail.length > 50) trail.pop();  // Extended trail length
+            if (trail.length > 50) trail.pop();
 
             drawBall();
 
