@@ -1,0 +1,5 @@
+{
+  "name": "Neo-Swiss D&D 5e Simulator",
+  "description": "An automated Dungeons & Dragons 5e party simulator featuring procedurally generated characters via Gemini AI, presented in a minimalist Neo-Swiss design.",
+  "requestFramePermissions": []
+}
